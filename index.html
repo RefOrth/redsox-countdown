@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Red Sox Next Game Countdown</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0d1b2a;
+    --red: #c8102e;
+    --red-dark: #9b0021;
+    --gold: #bd9b60;
+    --white: #f5f0e8;
+    --muted: #8a9bb0;
+    --card-bg: rgba(255,255,255,0.04);
+    --card-border: rgba(200,16,46,0.25);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(200,16,46,0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(189,155,96,0.08) 0%, transparent 60%),
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 60px,
+        rgba(255,255,255,0.012) 60px,
+        rgba(255,255,255,0.012) 61px
+      );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px 60px;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .sox-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+
+  .sock-icon {
+    width: 44px;
+    height: 44px;
+    fill: var(--red);
+    filter: drop-shadow(0 0 12px rgba(200,16,46,0.5));
+  }
+
+  .team-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2rem, 6vw, 3.2rem);
+    letter-spacing: 3px;
+    background: linear-gradient(135deg, #fff 0%, var(--gold) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  /* Next Game Banner */
+  .next-game-label {
+    text-align: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 4px;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* Matchup */
+  .matchup-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 40px rgba(200,16,46,0.08), inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+
+  .teams-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 18px;
+  }
+
+  .team-block {
+    text-align: center;
+    flex: 1;
+  }
+
+  .team-abbr {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.8rem, 8vw, 5rem);
+    line-height: 1;
+    letter-spacing: 2px;
+  }
+
+  .team-block.boston .team-abbr { color: var(--red); filter: drop-shadow(0 0 16px rgba(200,16,46,0.4)); }
+  .team-block.opponent .team-abbr { color: #a8b8c8; }
+
+  .team-full {
+    font-size: 0.78rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+    font-weight: 500;
+    margin-top: 4px;
+  }
+
+  .vs-badge {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    color: var(--gold);
+    background: rgba(189,155,96,0.1);
+    border: 1px solid rgba(189,155,96,0.3);
+    border-radius: 8px;
+    padding: 6px 14px;
+    flex-shrink: 0;
+  }
+
+  .game-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 20px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding-top: 18px;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .meta-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .meta-label {
+    font-size: 0.68rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .meta-value {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--white);
+    line-height: 1.3;
+  }
+
+  /* COUNTDOWN */
+  .countdown-section {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .countdown-label {
+    font-size: 0.72rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+
+  .countdown-display {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .time-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .time-digits {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(5rem, 18vw, 10rem);
+    line-height: 0.9;
+    color: var(--white);
+    text-shadow: 0 0 40px rgba(200,16,46,0.3), 0 0 80px rgba(200,16,46,0.12);
+    letter-spacing: -2px;
+    transition: color 0.3s;
+    min-width: 2ch;
+    text-align: center;
+  }
+
+  .time-digits.pulse {
+    color: var(--red);
+  }
+
+  .time-unit-label {
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  .colon {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(4rem, 14vw, 8.5rem);
+    line-height: 0.95;
+    color: var(--red);
+    opacity: 0.7;
+    animation: blinkColon 1s step-start infinite;
+    padding-bottom: 24px;
+    flex-shrink: 0;
+  }
+
+  @keyframes blinkColon {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 0.15; }
+  }
+
+  .game-time-display {
+    font-size: 1rem;
+    color: var(--gold);
+    font-weight: 500;
+    margin-top: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Status badge */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .status-badge.upcoming {
+    background: rgba(200,16,46,0.12);
+    border: 1px solid rgba(200,16,46,0.35);
+    color: #ff7a8a;
+  }
+
+  .status-badge.live {
+    background: rgba(40,200,80,0.12);
+    border: 1px solid rgba(40,200,80,0.4);
+    color: #50d87a;
+    animation: pulseBadge 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseBadge {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(40,200,80,0.3); }
+    50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(40,200,80,0); }
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .live .dot { animation: blinkDot 1s step-start infinite; }
+
+  @keyframes blinkDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* Info Cards */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  @media (max-width: 560px) {
+    .info-grid { grid-template-columns: 1fr; }
+    .game-meta { grid-template-columns: 1fr; }
+    .colon { font-size: clamp(3rem, 10vw, 6rem); }
+  }
+
+  .info-card {
+    background: var(--card-bg);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 18px 20px;
+    backdrop-filter: blur(4px);
+  }
+
+  .info-card-title {
+    font-size: 0.68rem;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .info-card-title::before {
+    content: '';
+    display: block;
+    width: 3px;
+    height: 14px;
+    background: var(--red);
+    border-radius: 2px;
+  }
+
+  .pitcher-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .pitcher-row:last-child { margin-bottom: 0; }
+
+  .pitcher-team {
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    color: var(--muted);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .pitcher-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--white);
+  }
+
+  .pitcher-hand {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .pitcher-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.06);
+    margin: 10px 0;
+  }
+
+  .tv-chip {
+    display: inline-block;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin: 3px 3px 0 0;
+    color: var(--white);
+  }
+
+  .blackout-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .blackout-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 3px 10px;
+    border-radius: 5px;
+  }
+
+  .blackout-badge.blacked-out {
+    background: rgba(200,16,46,0.2);
+    border: 1px solid rgba(200,16,46,0.5);
+    color: #ff6b7a;
+  }
+
+  .blackout-badge.not-blacked-out {
+    background: rgba(50,180,100,0.15);
+    border: 1px solid rgba(50,180,100,0.4);
+    color: #6de89a;
+  }
+
+  .blackout-note {
+    font-size: 0.73rem;
+    color: var(--muted);
+    line-height: 1.3;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    color: rgba(138,155,176,0.5);
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+    margin-top: 20px;
+  }
+
+  .live-section {
+    text-align: center;
+    padding: 20px;
+    background: rgba(40,200,80,0.05);
+    border: 1px solid rgba(40,200,80,0.2);
+    border-radius: 12px;
+    margin-bottom: 20px;
+  }
+
+  .live-section p {
+    color: #7de8a5;
+    font-size: 1rem;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="sox-logo">
+      <svg class="sock-icon" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 5 C20 5, 38 5, 40 5 C42 5, 44 7, 44 10 L44 28 C44 36, 50 40, 52 48 C53 52, 50 56, 44 56 L32 56 C26 56, 24 52, 24 48 L24 40 L18 40 C14 40, 12 36, 12 32 L12 14 C12 9, 16 5, 20 5 Z" fill="currentColor"/>
+        <rect x="12" y="22" width="32" height="5" rx="2" fill="#bd9b60" opacity="0.9"/>
+        <rect x="12" y="30" width="12" height="5" rx="2" fill="#bd9b60" opacity="0.9"/>
+      </svg>
+      <span class="team-name">Boston Red Sox</span>
+    </div>
+    <div class="subtitle">Next Game Countdown · Phoenix Time</div>
+  </header>
+
+  <div style="text-align:center; margin-bottom: 8px;">
+    <div id="statusBadge" class="status-badge upcoming">
+      <span class="dot"></span>
+      <span id="statusText">Upcoming</span>
+    </div>
+  </div>
+
+  <!-- Countdown -->
+  <div class="countdown-section">
+    <div class="countdown-label">Time Until First Pitch</div>
+    <div class="countdown-display" id="countdownDisplay">
+      <div class="time-block">
+        <div class="time-digits" id="hoursEl">00</div>
+        <div class="time-unit-label">Hours</div>
+      </div>
+      <div class="colon">:</div>
+      <div class="time-block">
+        <div class="time-digits" id="minsEl">00</div>
+        <div class="time-unit-label">Minutes</div>
+      </div>
+      <div class="colon">:</div>
+      <div class="time-block">
+        <div class="time-digits" id="secsEl">00</div>
+        <div class="time-unit-label">Seconds</div>
+      </div>
+    </div>
+    <div class="game-time-display" id="gameTimeLabel"></div>
+  </div>
+
+  <!-- Live Banner (hidden by default) -->
+  <div class="live-section" id="liveSection" style="display:none;">
+    <p>⚾ Game is in progress — check NESN or REDS.TV for live action!</p>
+  </div>
+
+  <!-- Matchup Card -->
+  <div class="matchup-card">
+    <div class="teams-row">
+      <div class="team-block opponent" id="awayBlock">
+        <div class="team-abbr" id="awayAbbr">BOS</div>
+        <div class="team-full" id="awayFull">Boston Red Sox</div>
+        <div class="team-full" style="margin-top:2px;font-size:0.7rem;" id="awayLabel">Away</div>
+      </div>
+      <div class="vs-badge">VS</div>
+      <div class="team-block boston" id="homeBlock">
+        <div class="team-abbr" id="homeAbbr">CIN</div>
+        <div class="team-full" id="homeFull">Cincinnati Reds</div>
+        <div class="team-full" style="margin-top:2px;font-size:0.7rem;" id="homeLabel">Home</div>
+      </div>
+    </div>
+
+    <div class="game-meta">
+      <div class="meta-item">
+        <div class="meta-icon">🏟️</div>
+        <div>
+          <div class="meta-label">Stadium</div>
+          <div class="meta-value" id="stadium">Great American Ball Park</div>
+        </div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-icon">📍</div>
+        <div>
+          <div class="meta-label">City</div>
+          <div class="meta-value" id="city">Cincinnati, Ohio</div>
+        </div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-icon">🗓️</div>
+        <div>
+          <div class="meta-label">Date</div>
+          <div class="meta-value" id="gameDate">—</div>
+        </div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-icon">⏰</div>
+        <div>
+          <div class="meta-label">First Pitch (Phoenix)</div>
+          <div class="meta-value" id="gameTime">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info Grid -->
+  <div class="info-grid">
+
+    <!-- Pitchers -->
+    <div class="info-card">
+      <div class="info-card-title">Starting Pitchers</div>
+      <div class="pitcher-row">
+        <div>
+          <div class="pitcher-team" id="pitcherAwayTeam">BOS</div>
+          <div class="pitcher-name" id="pitcherAway">—</div>
+          <div class="pitcher-hand" id="pitcherAwayHand"></div>
+        </div>
+      </div>
+      <div class="pitcher-divider"></div>
+      <div class="pitcher-row">
+        <div>
+          <div class="pitcher-team" id="pitcherHomeTeam">CIN</div>
+          <div class="pitcher-name" id="pitcherHome">—</div>
+          <div class="pitcher-hand" id="pitcherHomeHand"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TV & Streaming -->
+    <div class="info-card">
+      <div class="info-card-title">TV & Streaming</div>
+      <div id="tvCarriers"></div>
+      <div class="blackout-row">
+        <div>
+          <div id="blackoutBadge" class="blackout-badge not-blacked-out">Not Blacked Out</div>
+        </div>
+        <div class="blackout-note" id="blackoutNote">Available on MLB.TV outside Cincinnati territory</div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    Auto-advances to next game 1 hour after first pitch &nbsp;·&nbsp; Times shown in Phoenix (MST/No DST)
+  </footer>
+
+</div>
+
+<script>
+// ─── GAME DATA ───────────────────────────────────────────────────────────────
+// All times are ISO strings in UTC. We display in Phoenix time (UTC-7, no DST).
+
+const games = [
+  {
+    id: 'game1',
+    startUTC: '2026-03-29T17:40:00Z',  // 10:40 AM MST
+    away: { abbr: 'BOS', full: 'Boston Red Sox' },
+    home: { abbr: 'CIN', full: 'Cincinnati Reds' },
+    stadium: 'Great American Ball Park',
+    city: 'Cincinnati, Ohio',
+    pitchers: {
+      away: { name: 'Connelly Early', hand: 'LHP · 23 yrs old' },
+      home: { name: 'Rhett Lowder', hand: 'RHP · 24 yrs old' }
+    },
+    tv: ['NESN', 'NESN 360', 'REDS.TV', 'Fubo'],
+    blackedOut: false,
+    blackoutNote: 'Available on MLB.TV outside Cincinnati & New England markets'
+  },
+  {
+    id: 'game2',
+    startUTC: '2026-03-31T00:10:00Z',  // Mon Mar 30, 5:10 PM MST
+    away: { abbr: 'BOS', full: 'Boston Red Sox' },
+    home: { abbr: 'HOU', full: 'Houston Astros' },
+    stadium: 'Minute Maid Park',
+    city: 'Houston, Texas',
+    pitchers: {
+      away: { name: 'TBD', hand: '' },
+      home: { name: 'TBD', hand: '' }
+    },
+    tv: ['NESN', 'NESN 360', 'Fubo'],
+    blackedOut: false,
+    blackoutNote: 'Available on MLB.TV outside Houston & New England markets'
+  },
+  {
+    id: 'game3',
+    startUTC: '2026-04-01T00:10:00Z',  // Tue Mar 31, 5:10 PM MST
+    away: { abbr: 'BOS', full: 'Boston Red Sox' },
+    home: { abbr: 'HOU', full: 'Houston Astros' },
+    stadium: 'Minute Maid Park',
+    city: 'Houston, Texas',
+    pitchers: {
+      away: { name: 'TBD', hand: '' },
+      home: { name: 'TBD', hand: '' }
+    },
+    tv: ['NESN', 'NESN 360', 'Fubo'],
+    blackedOut: false,
+    blackoutNote: 'Available on MLB.TV outside Houston & New England markets'
+  },
+  {
+    id: 'game4',
+    startUTC: '2026-04-01T18:10:00Z',  // Wed Apr 1, 11:10 AM MST
+    away: { abbr: 'BOS', full: 'Boston Red Sox' },
+    home: { abbr: 'HOU', full: 'Houston Astros' },
+    stadium: 'Minute Maid Park',
+    city: 'Houston, Texas',
+    pitchers: {
+      away: { name: 'TBD', hand: '' },
+      home: { name: 'TBD', hand: '' }
+    },
+    tv: ['NESN', 'NESN 360', 'Fubo'],
+    blackedOut: false,
+    blackoutNote: 'Available on MLB.TV outside Houston & New England markets'
+  }
+];
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+const PHOENIX_TZ = 'America/Phoenix';
+
+function nowUTC() {
+  return Date.now(); // always UTC ms
+}
+
+function gameStartUTC(isoUTC) {
+  return new Date(isoUTC).getTime(); // UTC ms
+}
+
+function formatPhoenixTime(isoUTC) {
+  return new Date(isoUTC).toLocaleTimeString('en-US', {
+    timeZone: PHOENIX_TZ,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  }) + ' MST';
+}
+
+function formatPhoenixDate(isoUTC) {
+  return new Date(isoUTC).toLocaleDateString('en-US', {
+    timeZone: PHOENIX_TZ,
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+// ─── ACTIVE GAME SELECTION ───────────────────────────────────────────────────
+function getActiveGame() {
+  const nowMs = nowUTC();
+
+  for (let i = 0; i < games.length; i++) {
+    const g = games[i];
+    const startMs = gameStartUTC(g.startUTC);
+    const cutoffMs = startMs + 60 * 60 * 1000;
+
+    if (nowMs < cutoffMs) {
+      return g;
+    }
+  }
+  return games[games.length - 1];
+}
+
+// ─── RENDER GAME INFO ────────────────────────────────────────────────────────
+function renderGame(g) {
+  document.getElementById('awayAbbr').textContent = g.away.abbr;
+  document.getElementById('awayFull').textContent = g.away.full;
+  document.getElementById('awayLabel').textContent = 'Away';
+  document.getElementById('homeAbbr').textContent = g.home.abbr;
+  document.getElementById('homeFull').textContent = g.home.full;
+  document.getElementById('homeLabel').textContent = 'Home';
+
+  // Style: always show BOS in red
+  document.getElementById('awayBlock').className = 'team-block ' + (g.away.abbr === 'BOS' ? 'boston' : 'opponent');
+  document.getElementById('homeBlock').className = 'team-block ' + (g.home.abbr === 'BOS' ? 'boston' : 'opponent');
+
+  document.getElementById('stadium').textContent = g.stadium;
+  document.getElementById('city').textContent = g.city;
+  document.getElementById('gameDate').textContent = formatPhoenixDate(g.startUTC);
+  document.getElementById('gameTime').textContent = formatPhoenixTime(g.startUTC);
+  document.getElementById('gameTimeLabel').textContent = `First pitch: ${formatPhoenixTime(g.startUTC)} on ${formatPhoenixDate(g.startUTC)}`;
+
+  // Pitchers
+  document.getElementById('pitcherAwayTeam').textContent = g.away.abbr;
+  document.getElementById('pitcherAway').textContent = g.pitchers.away.name;
+  document.getElementById('pitcherAwayHand').textContent = g.pitchers.away.hand;
+  document.getElementById('pitcherHomeTeam').textContent = g.home.abbr;
+  document.getElementById('pitcherHome').textContent = g.pitchers.home.name;
+  document.getElementById('pitcherHomeHand').textContent = g.pitchers.home.hand;
+
+  // TV
+  const tvEl = document.getElementById('tvCarriers');
+  tvEl.innerHTML = g.tv.map(ch => `<span class="tv-chip">${ch}</span>`).join('');
+
+  // Blackout
+  const bb = document.getElementById('blackoutBadge');
+  if (g.blackedOut) {
+    bb.className = 'blackout-badge blacked-out';
+    bb.textContent = '⛔ Blacked Out on MLB.TV';
+  } else {
+    bb.className = 'blackout-badge not-blacked-out';
+    bb.textContent = '✓ Not Blacked Out';
+  }
+  document.getElementById('blackoutNote').textContent = g.blackoutNote;
+}
+
+// ─── COUNTDOWN TICK ──────────────────────────────────────────────────────────
+let lastGame = null;
+let lastSec = -1;
+
+function tick() {
+  const g = getActiveGame();
+
+  // Re-render if game changed
+  if (!lastGame || lastGame.id !== g.id) {
+    lastGame = g;
+    renderGame(g);
+  }
+
+  const nowMs = nowUTC();
+  const startMs = gameStartUTC(g.startUTC);
+  const diffMs = startMs - nowMs;
+
+  const badge = document.getElementById('statusBadge');
+  const statusText = document.getElementById('statusText');
+  const liveSection = document.getElementById('liveSection');
+  const countdownDisplay = document.getElementById('countdownDisplay');
+
+  if (diffMs > 0) {
+    // Upcoming
+    badge.className = 'status-badge upcoming';
+    statusText.textContent = 'Upcoming';
+    liveSection.style.display = 'none';
+    countdownDisplay.style.display = 'flex';
+
+    const totalSecs = Math.floor(diffMs / 1000);
+    const h = Math.floor(totalSecs / 3600);
+    const m = Math.floor((totalSecs % 3600) / 60);
+    const s = totalSecs % 60;
+
+    const hEl = document.getElementById('hoursEl');
+    const mEl = document.getElementById('minsEl');
+    const sEl = document.getElementById('secsEl');
+
+    hEl.textContent = pad2(h);
+    mEl.textContent = pad2(m);
+    sEl.textContent = pad2(s);
+
+    // Pulse seconds element each tick
+    if (s !== lastSec) {
+      lastSec = s;
+      sEl.classList.add('pulse');
+      setTimeout(() => sEl.classList.remove('pulse'), 300);
+    }
+
+  } else {
+    // Game has started — check if within 1 hr
+    const elapsedMs = -diffMs;
+    const oneHrMs = 60 * 60 * 1000;
+
+    if (elapsedMs < oneHrMs) {
+      // Live window
+      badge.className = 'status-badge live';
+      statusText.textContent = 'Live Now';
+      liveSection.style.display = 'block';
+      countdownDisplay.style.display = 'none';
+
+      // Countdown to 1hr mark
+      const remMs = oneHrMs - elapsedMs;
+      const remSecs = Math.floor(remMs / 1000);
+      const h = Math.floor(remSecs / 3600);
+      const m = Math.floor((remSecs % 3600) / 60);
+      const s = remSecs % 60;
+      document.getElementById('hoursEl').textContent = pad2(h);
+      document.getElementById('minsEl').textContent = pad2(m);
+      document.getElementById('secsEl').textContent = pad2(s);
+    } else {
+      // Past 1 hour — getActiveGame() would have moved to next game already
+      // Force re-evaluate on next tick
+      lastGame = null;
+    }
+  }
+}
+
+tick();
+setInterval(tick, 1000);
+</script>
+</body>
+</html>
